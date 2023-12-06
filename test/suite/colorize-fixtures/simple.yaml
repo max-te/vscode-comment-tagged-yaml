@@ -1,0 +1,6 @@
+scripts:
+    - | # bash
+      source test.sh
+      if [[ $A -eq $B ]]; then echo "AB"; fi
+    - | # python
+      print("Hello, World")
