@@ -1,50 +1,51 @@
 // @ts-check
 
-const fs = require('fs');
-const path = require('path');
-const { languages } = require('./languages');
+const fs = require("fs");
+const path = require("path");
+const { languages } = require("./languages");
 
-const targetScopes = ['source.js', 'source.jsx', 'source.js.jsx', 'source.ts', 'source.tsx']
+const targetScopes = ["source.yaml"];
 
 const basicGrammarTemplate = {
     "fileTypes": [],
     "injectionSelector": getBasicGrammarInjectionSelector(),
     "patterns": [],
-    "scopeName": "inline.template-tagged-languages"
-};
-
-const reinjectGrammarTemplate = {
-    "fileTypes": [],
-    "injectionSelector": getReinjectGrammarInjectionSelector(),
-    "patterns": [
-        {
-            "include": "source.ts#template-substitution-element"
-        }
-    ],
-    "scopeName": "inline.template-tagged-languages.reinjection"
+    "scopeName": "inline.template-tagged-languages",
 };
 
 const getBasicGrammarPattern = (language) => {
-    const sources = Array.isArray(language.source) ? language.source : [language.source];
+    const sources = Array.isArray(language.source)
+        ? language.source
+        : [language.source];
+    const identifierPattern = language.identifiers.map(escapeRegExp).join("|");
     return {
-        name: `string.js.taggedTemplate.commentTaggedTemplate.${language.name}`,
+        // name: `string.unquoted.block.yaml.tagged.${language.name}`,
         contentName: `meta.embedded.block.${language.name}`,
 
-        // The leading '/' was consumed by outer rule
-        begin: `(?i)(\\*\\s*\\b(?:${language.identifiers.map(escapeRegExp).join('|')})\\b\\s*\\*/)\\s*(\`)`,
+        // The leading '|1+' was consumed by outer rule
+        begin: `(#)[ \t]*(${identifierPattern})\\n`,
         beginCaptures: {
-            1: { name: 'comment.block.ts' },
-            2: { name: 'punctuation.definition.string.template.begin.js' }
+            0: {
+                name: "comment.line.number-sign.yaml",
+            },
+            1: {
+                name: "punctuation.definition.comment.yaml",
+            },
+            2: {
+                name: `comment.tag.${language.name}`,
+            },
         },
-        end: '(?=`)',
+        end: "^(?=\\S)|(?!\\G)",
         patterns: [
-            ...sources.map(source => ({ 'include': source })),
-            // When a language grammar is not installed, insert a phony pattern
-            // so that we still match all the inner text but don't highlight it
             {
-                match: "."
-            }
-        ]
+                "begin": "(?=^([ ]+)(?! ))",
+                "end": "^(?!\\1|\\s*$)",
+                "name": "string.unquoted.block.yaml",
+                "patterns": [
+                    ...sources.map((source) => ({ "include": source })),
+                ],
+            },
+        ],
     };
 };
 
@@ -52,51 +53,52 @@ const getBasicGrammar = () => {
     const basicGrammar = basicGrammarTemplate;
 
     basicGrammar.repository = languages.reduce((repository, language) => {
-        repository[getRepositoryName(language)] = getBasicGrammarPattern(language);
+        repository[getRepositoryName(language)] =
+            getBasicGrammarPattern(language);
         return repository;
     }, {});
 
-    const allLanguageIdentifiers = [].concat(...languages.map(x => x.identifiers));
+    const allLanguageIdentifiers = [].concat(
+        ...languages.map((x) => x.identifiers)
+    );
+    const allIdentifiersPattern = allLanguageIdentifiers
+        .map(escapeRegExp)
+        .join("|");
     basicGrammar.patterns = [
         {
             // Match entire language comment identifier but only consume '/'
-            begin: `(?i)(/)(?=(\\*\\s*\\b(?:${allLanguageIdentifiers.map(escapeRegExp).join('|')})\\b\\s*\\*/)\\s*\`)`,
+            begin: `(?:(\\|))([1-9])?([-+])?[ \t]*`,
             beginCaptures: {
-                1: { name: 'comment.block.ts' }
+                1: { name: "keyword.control.flow.block-scalar.literal.yaml" },
+                2: {
+                    name: "constant.numeric.indentation-indicator.yaml",
+                },
+                3: {
+                    name: "storage.modifier.chomping-indicator.yaml",
+                },
             },
-            end: '(`)',
-            endCaptures: {
-                0: { name: 'string.js' },
-                1: { name: 'punctuation.definition.string.template.end.js' }
-            },
-            patterns: languages.map(language => ({ include: '#' + getRepositoryName(language) }))
-        }
-    ]
+            end: "^(?=\\S)|(?!\\G)",
+            patterns: languages.map((language) => ({
+                include: "#" + getRepositoryName(language),
+            })),
+        },
+    ];
 
     return basicGrammar;
 };
 
-function getRepositoryName(langauge) {
-    return 'commentTaggedTemplate-' + langauge.name;
+function getRepositoryName(language) {
+    return "commentTaggedString-" + language.name;
 }
 
 function getBasicGrammarInjectionSelector() {
     return targetScopes
-        .map(scope => `L:${scope} -comment -(string - meta.embedded)`)
-        .join(', ');
-}
-
-function getReinjectGrammarInjectionSelector() {
-    return targetScopes
-        .map(scope => {
-            const embeddedScopeSelectors = languages.map(language => `meta.embedded.block.${language.name}`);
-            return `L:${scope} (${embeddedScopeSelectors.join(', ')})`
-        })
-        .join(', ');
+        .map((scope) => `L:${scope} -comment -(string - meta.embedded)`)
+        .join(", ");
 }
 
 function escapeRegExp(text) {
-    return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+    return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 }
 
 function writeJson(outFile, json) {
@@ -104,11 +106,6 @@ function writeJson(outFile, json) {
 }
 
 exports.updateGrammars = () => {
-    const outDir = path.join(__dirname, '..', 'syntaxes');
-    writeJson(path.join(outDir, 'grammar.json'), getBasicGrammar());
-
-    writeJson(
-        path.join(outDir, 'reinject-grammar.json'),
-        reinjectGrammarTemplate);
+    const outDir = path.join(__dirname, "..", "syntaxes");
+    writeJson(path.join(outDir, "grammar.json"), getBasicGrammar());
 };
-

@@ -1,18 +1,17 @@
 {
-    "name": "comment-tagged-templates",
-    "displayName": "Comment tagged templates",
-    "description": "Syntax highlighting for tagged template strings using comments to specify language",
+    "name": "comment-tagged-yaml",
+    "displayName": "Comment tagged yaml",
+    "description": "Syntax highlighting for yaml block strings using comments to specify language",
     "version": "0.3.2",
-    "publisher": "bierner",
     "galleryBanner": {
         "color": "#ffffff",
         "theme": "light"
     },
     "repository": {
-        "url": "https://github.com/mjbvz/vscode-comment-tagged-templates.git"
+        "url": "https://github.com/max-te/vscode-comment-tagged-yaml.git"
     },
     "bugs": {
-        "url": "https://github.com/mjbvz/vscode-comment-tagged-templates/issues"
+        "url": "https://github.com/max-te/vscode-comment-tagged-yaml/issues"
     },
     "engines": {
         "vscode": "^1.20.0"
@@ -21,24 +20,15 @@
         "Programming Languages"
     ],
     "keywords": [
-        "javascript",
-        "typescript",
+        "yaml",
         "tagged",
-        "template",
         "embedded"
     ],
     "contributes": {
         "grammars": [
             {
                 "injectTo": [
-                    "source.js",
-                    "source.js.jsx",
-                    "source.jsx",
-                    "source.ts",
-                    "source.tsx",
-                    "text.html.basic",
-                    "text.html.derivative",
-                    "text.html.markdown"
+                    "source.yaml"
                 ],
                 "scopeName": "inline.template-tagged-languages",
                 "path": "./syntaxes/grammar.json",
@@ -91,27 +81,11 @@
                     "meta.embedded.block.liquid": "liquid",
                     "meta.embedded.block.sparql": "sparql"
                 }
-            },
-            {
-                "injectTo": [
-                    "source.js",
-                    "source.js.jsx",
-                    "source.jsx",
-                    "source.ts",
-                    "source.tsx",
-                    "text.html.basic",
-                    "text.html.derivative",
-                    "text.html.markdown"
-                ],
-                "scopeName": "inline.template-tagged-languages.reinjection",
-                "path": "./syntaxes/reinject-grammar.json",
-                "embeddedLanguages": {
-                    "meta.template.expression.ts": "typescript"
-                }
             }
         ]
     },
     "devDependencies": {
+        "@types/node": "~20.10.3",
         "@vscode/test-electron": "^2.3.0",
         "mocha": "^10.2.0"
     },
@@ -119,5 +93,9 @@
         "build": "node ./build/build",
         "getEmbedded": "node ./build/getEmbedded",
         "test": "node ./test/index.mjs"
+    },
+    "prettier": {
+        "tabWidth": 4,
+        "quoteProps": "preserve"
     }
 }
